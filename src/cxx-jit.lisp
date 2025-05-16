@@ -57,17 +57,26 @@
                                                           ("size_t" . :size)
                                                           ("ssize_t" . :ssize)))
 
-(define-condition cxx-compile-error (error)
+(define-condition cxx-error (error)
   ((message
     :initarg :message
-    :reader cxx-compile-error-message))
+    :reader cxx-error-message)))
+
+(define-condition cxx-compile-error (cxx-error)
+  ()
   (:report (lambda (condition stream)
-             (format stream "C++ compile error:~%~A"
-                     (cxx-compile-error-message condition)))))
+             (format stream "C++ compile error: ~A"
+                     (cxx-error-message condition)))))
+
+(define-condition cxx-runtime-error (cxx-error)
+  ()
+  (:report (lambda (condition stream)
+             (format stream "C++ runtime error: ~A"
+                     (cxx-error-message condition)))))
 
 ;; inline void lisp_error(const char *error)
 (cffi:defcallback lisp-error :void ((err :string))
-  (format t "Caught error: ~a~%" err))
+  (error 'cxx-runtime-error :message err))
 
 (cffi:defcstruct meta-data
   (func-ptr :pointer)
